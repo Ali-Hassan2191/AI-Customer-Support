@@ -7,9 +7,11 @@ from sentence_transformers import SentenceTransformer
 from crewai.tools import tool
 
 BASE_DIR = Path(__file__).resolve().parent
-INDEX_PATH = BASE_DIR / "faiss.index"
-CHUNKS_PATH = BASE_DIR / "chunks.json"
-ORDERS_PATH = BASE_DIR / "orders.xlsx"
+DATA_DIR = BASE_DIR / "data"
+
+INDEX_PATH = DATA_DIR / "faiss.index"
+CHUNKS_PATH = DATA_DIR / "chunks.json"
+ORDERS_PATH = DATA_DIR / "orders.xlsx"
 
 _EMBEDDER = None
 _INDEX = None
