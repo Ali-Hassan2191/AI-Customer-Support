@@ -46,11 +46,11 @@ with chat_col:
                         contact_email=contact_email,
                     )
                 except Exception as exc:
-    st.exception(exc)
-    response = (
-        "Sorry, I couldn't process your request right now. "
-        "The technical team has been notified."
-    )
+                    st.exception(exc)
+                    response = (
+                        "Sorry, I couldn't process your request right now. "
+                        "The technical team has been notified."
+                    )
                 st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.rerun()
