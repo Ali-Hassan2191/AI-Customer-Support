@@ -1,4 +1,5 @@
-"""Streamlit frontend for the CrewAI customer support assistant."""
+
+"""Customer Support AI - Streamlit frontend."""
 
 import pandas as pd
 import streamlit as st
@@ -7,9 +8,9 @@ from agent import answer_customer
 from escalation import read_pending_tickets
 
 
-# ============================================================
+# =========================================================
 # PAGE CONFIG
-# ============================================================
+# =========================================================
 
 st.set_page_config(
     page_title="Customer Support AI",
@@ -19,240 +20,156 @@ st.set_page_config(
 )
 
 
-# ============================================================
+# =========================================================
 # CUSTOM CSS
-# ============================================================
+# =========================================================
 
 st.markdown(
     """
     <style>
 
-    /* ======================================================
-       GLOBAL
-       ====================================================== */
+    /* ---------- Global ---------- */
 
     .stApp {
         background: #f7f8fc;
     }
 
-    .main .block-container {
-        max-width: 1450px;
+    .block-container {
+        max-width: 1400px;
         padding-top: 1.5rem;
-        padding-bottom: 3rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        padding-bottom: 2rem;
     }
 
-    /* Remove unnecessary top spacing */
-    header[data-testid="stHeader"] {
-        background: transparent;
+    /* ---------- Header ---------- */
+
+    .main-header {
+        background: linear-gradient(
+            135deg,
+            #111827 0%,
+            #1f2937 100%
+        );
+        padding: 28px 32px;
+        border-radius: 18px;
+        margin-bottom: 22px;
+        color: white;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
     }
 
-    /* ======================================================
-       SIDEBAR
-       ====================================================== */
+    .main-header h1 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    .main-header p {
+        margin: 8px 0 0 0;
+        color: #d1d5db;
+        font-size: 15px;
+    }
+
+    /* ---------- Welcome Card ---------- */
+
+    .welcome-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 26px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+    }
+
+    .welcome-card h3 {
+        margin-top: 0;
+        color: #111827;
+    }
+
+    .welcome-card p {
+        color: #6b7280;
+        margin-bottom: 0;
+    }
+
+    /* ---------- Feature Cards ---------- */
+
+    .feature-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 18px;
+        min-height: 120px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .feature-icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+
+    .feature-title {
+        font-weight: 650;
+        color: #111827;
+        margin-bottom: 5px;
+    }
+
+    .feature-text {
+        color: #6b7280;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    /* ---------- Ticket Card ---------- */
+
+    .ticket-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .ticket-id {
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .ticket-status {
+        display: inline-block;
+        background: #fff7ed;
+        color: #c2410c;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    /* ---------- Sidebar ---------- */
 
     [data-testid="stSidebar"] {
         background: #ffffff;
         border-right: 1px solid #e5e7eb;
     }
 
-    [data-testid="stSidebar"] > div:first-child {
-        padding-top: 1.5rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-
-    [data-testid="stSidebar"] [data-testid="stTextInput"] {
-        margin-bottom: 0.8rem;
-    }
-
-    [data-testid="stSidebar"] .stTextInput input {
-        min-height: 42px;
-        border-radius: 10px;
-        border: 1px solid #d7dbe5;
-        background: #ffffff;
-    }
-
-    [data-testid="stSidebar"] .stTextInput input:focus {
-        border-color: #f59e0b;
-        box-shadow: 0 0 0 1px #f59e0b;
-    }
-
-    .sidebar-brand {
-        font-size: 1.18rem;
-        font-weight: 750;
-        color: #111827;
-        margin-bottom: 0.25rem;
-    }
-
-    .sidebar-description {
-        color: #6b7280;
-        font-size: 0.82rem;
-        line-height: 1.45;
-        margin-bottom: 1.25rem;
-    }
-
-    .sidebar-section-title {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: #111827;
-        margin-top: 0.8rem;
-        margin-bottom: 0.55rem;
-    }
-
-    /* ======================================================
-       TOP HEADER
-       ====================================================== */
-
-    .top-title {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #111827;
-        margin-bottom: 0.15rem;
-    }
-
-    .top-subtitle {
-        font-size: 0.95rem;
-        color: #6b7280;
-        margin-bottom: 1.5rem;
-    }
-
-    .title-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        background: #fff7ed;
-        border: 1px solid #fed7aa;
-        margin-right: 8px;
-        vertical-align: middle;
-    }
-
-    /* ======================================================
-       SECTION HEADERS
-       ====================================================== */
-
-    .section-heading {
-        font-size: 1.15rem;
-        font-weight: 750;
-        color: #111827;
-        margin-top: 0.15rem;
-        margin-bottom: 0.75rem;
-    }
-
-    /* ======================================================
-       WELCOME BOX
-       ====================================================== */
-
-    .welcome-title {
-        font-size: 1.05rem;
-        font-weight: 750;
-        color: #111827;
-        margin-bottom: 0.35rem;
-    }
-
-    .welcome-text {
-        color: #6b7280;
-        font-size: 0.92rem;
-        line-height: 1.55;
-        margin: 0;
-    }
-
-    /* ======================================================
-       NATIVE STREAMLIT CONTAINERS
-       ====================================================== */
-
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        border-radius: 14px;
-    }
-
-    /* ======================================================
-       CHAT
-       ====================================================== */
+    /* ---------- Chat ---------- */
 
     [data-testid="stChatMessage"] {
         border-radius: 14px;
-        margin-bottom: 0.6rem;
     }
 
-    [data-testid="stChatInput"] {
-        margin-top: 0.8rem;
-    }
-
-    [data-testid="stChatInput"] textarea {
-        border-radius: 14px;
-        border: 1px solid #d7dbe5;
-    }
-
-    [data-testid="stChatInput"] textarea:focus {
-        border-color: #f59e0b;
-        box-shadow: 0 0 0 1px #f59e0b;
-    }
-
-    /* ======================================================
-       METRIC
-       ====================================================== */
-
-    [data-testid="stMetric"] {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 0.85rem 1rem;
-    }
-
-    [data-testid="stMetricLabel"] {
-        color: #6b7280;
-    }
-
-    /* ======================================================
-       BUTTONS
-       ====================================================== */
+    /* ---------- Buttons ---------- */
 
     .stButton > button {
-        min-height: 42px;
         border-radius: 10px;
-        font-weight: 650;
-        border: 1px solid #d7dbe5;
+        font-weight: 600;
     }
 
-    .stButton > button:hover {
-        border-color: #f59e0b;
-        color: #b45309;
-    }
+    /* ---------- Footer ---------- */
 
-    /* ======================================================
-       DOWNLOAD BUTTON
-       ====================================================== */
-
-    .stDownloadButton > button {
-        min-height: 42px;
-        border-radius: 10px;
-        font-weight: 650;
-    }
-
-    /* ======================================================
-       SMALL SCREENS
-       ====================================================== */
-
-    @media (max-width: 900px) {
-
-        .main .block-container {
-            padding-left: 1rem;
-            padding-right: 1rem;
-            padding-top: 1rem;
-        }
-
-        .top-title {
-            font-size: 1.55rem;
-        }
-
-        .top-subtitle {
-            font-size: 0.88rem;
-        }
-
+    .footer {
+        text-align: center;
+        color: #9ca3af;
+        font-size: 12px;
+        padding-top: 18px;
     }
 
     </style>
@@ -261,74 +178,67 @@ st.markdown(
 )
 
 
-# ============================================================
+# =========================================================
 # SESSION STATE
-# ============================================================
+# =========================================================
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 
-# ============================================================
+# =========================================================
+# HEADER
+# =========================================================
+
+st.markdown(
+    """
+    <div class="main-header">
+        <h1>💬 Customer Support AI</h1>
+        <p>
+            Get help with company information, products, orders,
+            and support requests.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# =========================================================
 # SIDEBAR
-# ============================================================
+# =========================================================
 
 with st.sidebar:
 
-    st.markdown(
-        '<div class="sidebar-brand">🟠 Customer Profile</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown("## 👤 Customer Profile")
 
-    st.markdown(
-        '<div class="sidebar-description">'
-        "Optional information helps our support team contact you "
-        "if human assistance is needed."
-        "</div>",
-        unsafe_allow_html=True,
+    st.caption(
+        "Optional information helps our support team "
+        "follow up when needed."
     )
-
-    # --------------------------------------------------------
-    # CUSTOMER NAME
-    # --------------------------------------------------------
 
     customer_name = st.text_input(
         "Your name",
+        placeholder="e.g. Ali Hassan",
         key="customer_name",
-        placeholder="Enter your name",
     )
-
-    # --------------------------------------------------------
-    # EMAIL
-    # --------------------------------------------------------
 
     contact_email = st.text_input(
         "Email address",
+        placeholder="e.g. you@example.com",
         key="contact_email",
-        placeholder="you@example.com",
     )
 
     st.divider()
 
-    # --------------------------------------------------------
-    # ORDER SUPPORT
-    # --------------------------------------------------------
-
-    st.markdown(
-        '<div class="sidebar-section-title">📦 Order Support</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown("### 📦 Order Support")
 
     st.info(
-        "For order status, provide both your **Order ID** "
-        "and the **phone number used for that order**."
+        "To check an order, please provide both your "
+        "**Order ID** and the **phone number used for the order**."
     )
 
     st.divider()
-
-    # --------------------------------------------------------
-    # CLEAR CHAT
-    # --------------------------------------------------------
 
     if st.button(
         "🗑️ Clear conversation",
@@ -339,158 +249,130 @@ with st.sidebar:
 
     st.divider()
 
-    st.caption("Customer Support AI")
-    st.caption("Powered by CrewAI + Gemini")
+    st.markdown("### 🔒 Privacy")
+
+    st.caption(
+        "Order information is only returned after "
+        "the order ID and contact number are verified."
+    )
 
 
-# ============================================================
-# HEADER
-# ============================================================
-
-st.markdown(
-    """
-    <div class="top-title">
-        <span class="title-icon">🟡</span>
-        Customer Support AI
-    </div>
-
-    <div class="top-subtitle">
-        Get help with company information, products, orders,
-        delivery status, and support requests.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-# ============================================================
+# =========================================================
 # MAIN COLUMNS
-# ============================================================
+# =========================================================
 
 chat_col, support_col = st.columns(
-    [2.35, 1],
+    [2.2, 1],
     gap="large",
 )
 
 
-# ============================================================
+# =========================================================
 # CHAT AREA
-# ============================================================
+# =========================================================
 
 with chat_col:
 
-    st.markdown(
-        '<div class="section-heading">💬 Support Chat</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown("### 💬 Support Chat")
 
-    # --------------------------------------------------------
-    # WELCOME SCREEN
-    # --------------------------------------------------------
+    # -----------------------------------------------------
+    # Welcome screen
+    # -----------------------------------------------------
 
     if not st.session_state.messages:
 
-        with st.container(border=True):
-
-            st.markdown(
-                '<div class="welcome-title">👋 Welcome!</div>',
-                unsafe_allow_html=True,
-            )
-
-            st.markdown(
-                '<p class="welcome-text">'
-                "I'm your customer support assistant. "
-                "Ask me about company policies, products, "
-                "orders, delivery status, or any support issue."
-                "</p>",
-                unsafe_allow_html=True,
-            )
-
-        st.write("")
-
-        # ----------------------------------------------------
-        # FEATURE CARDS
-        # ----------------------------------------------------
-
-        feature_1, feature_2, feature_3 = st.columns(
-            3,
-            gap="medium",
+        st.markdown(
+            """
+            <div class="welcome-card">
+                <h3>👋 Welcome!</h3>
+                <p>
+                    I'm your customer support assistant.
+                    Ask me about company policies, products,
+                    orders, or any support issue.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
-        with feature_1:
+        feature_col1, feature_col2, feature_col3 = st.columns(3)
 
-            with st.container(border=True):
+        with feature_col1:
+            st.markdown(
+                """
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <div class="feature-title">
+                        Company Knowledge
+                    </div>
+                    <div class="feature-text">
+                        Get answers from the company's
+                        knowledge base.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                st.markdown("### 📚")
+        with feature_col2:
+            st.markdown(
+                """
+                <div class="feature-card">
+                    <div class="feature-icon">📦</div>
+                    <div class="feature-title">
+                        Order Tracking
+                    </div>
+                    <div class="feature-text">
+                        Check your order status after
+                        secure verification.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                st.markdown("**Company Knowledge**")
+        with feature_col3:
+            st.markdown(
+                """
+                <div class="feature-card">
+                    <div class="feature-icon">👨‍💼</div>
+                    <div class="feature-title">
+                        Human Support
+                    </div>
+                    <div class="feature-text">
+                        Issues that need human attention
+                        can be escalated.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                st.caption(
-                    "Get answers from the company's "
-                    "knowledge base."
-                )
-
-        with feature_2:
-
-            with st.container(border=True):
-
-                st.markdown("### 📦")
-
-                st.markdown("**Order Tracking**")
-
-                st.caption(
-                    "Check verified order status using "
-                    "your Order ID and phone number."
-                )
-
-        with feature_3:
-
-            with st.container(border=True):
-
-                st.markdown("### 🟠")
-
-                st.markdown("**Human Support**")
-
-                st.caption(
-                    "Issues that need human help can "
-                    "be escalated to support."
-                )
-
-    # --------------------------------------------------------
-    # EXISTING MESSAGES
-    # --------------------------------------------------------
+    # -----------------------------------------------------
+    # Existing messages
+    # -----------------------------------------------------
 
     for message in st.session_state.messages:
 
-        role = message.get("role", "assistant")
-        content = message.get("content", "")
-
-        if role == "user":
-            avatar = "🟠"
-        else:
-            avatar = "🟡"
-
         with st.chat_message(
-            role,
-            avatar=avatar,
+            message["role"]
         ):
-            st.markdown(content)
 
-    # --------------------------------------------------------
-    # CHAT INPUT
-    # --------------------------------------------------------
+            st.markdown(
+                message["content"]
+            )
+
+    # -----------------------------------------------------
+    # Chat input
+    # -----------------------------------------------------
 
     prompt = st.chat_input(
-        "Ask something about your order or company support..."
+        "Type your message..."
     )
-
-    # --------------------------------------------------------
-    # HANDLE MESSAGE
-    # --------------------------------------------------------
 
     if prompt:
 
-        # Save current user message
+        # Save user message.
         st.session_state.messages.append(
             {
                 "role": "user",
@@ -498,24 +380,23 @@ with chat_col:
             }
         )
 
-        # Display user message
-        with st.chat_message(
-            "user",
-            avatar="🟠",
-        ):
+        with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Generate AI response
-        with st.chat_message(
-            "assistant",
-            avatar="🟡",
-        ):
+        # -------------------------------------------------
+        # Agent response
+        # -------------------------------------------------
 
-            with st.spinner("Thinking..."):
+        with st.chat_message("assistant"):
+
+            with st.spinner(
+                "Thinking..."
+            ):
 
                 try:
 
-                    # Exclude current message from history
+                    # Exclude current message because
+                    # it is passed separately.
                     previous_history = (
                         st.session_state.messages[:-1]
                     )
@@ -527,20 +408,35 @@ with chat_col:
                         contact_email=contact_email,
                     )
 
-                except Exception as exc:
+                    response = str(
+                        response
+                    ).strip()
 
-                    # IMPORTANT:
-                    # Full error shown during development.
-                    st.exception(exc)
+                    if not response:
+                        response = (
+                            "I'm sorry, I couldn't generate "
+                            "a response. Please try again."
+                        )
+
+                except Exception:
 
                     response = (
-                        "Sorry, I couldn't process your request "
-                        "right now. Please try again."
+                        "I'm sorry, something went wrong "
+                        "while processing your request. "
+                        "Please try again."
                     )
 
-                st.markdown(response)
+                    # Detailed error goes to Streamlit logs,
+                    # not to the customer UI.
+                    st.exception(
+                        Exception(
+                            "Customer support agent failed."
+                        )
+                    )
 
-        # Save assistant response
+            st.markdown(response)
+
+        # Save assistant response.
         st.session_state.messages.append(
             {
                 "role": "assistant",
@@ -548,142 +444,115 @@ with chat_col:
             }
         )
 
+        st.rerun()
 
-# ============================================================
-# HUMAN SUPPORT
-# ============================================================
+
+# =========================================================
+# HUMAN SUPPORT PANEL
+# =========================================================
 
 with support_col:
 
     st.markdown(
-        '<div class="section-heading">🧾 Human Support</div>',
-        unsafe_allow_html=True,
+        "### 🧾 Human Support"
     )
-
-    # --------------------------------------------------------
-    # LOAD TICKETS
-    # --------------------------------------------------------
 
     try:
 
         tickets = read_pending_tickets()
 
-    except Exception as exc:
+    except Exception:
 
         tickets = []
-
-        st.error(
-            f"Could not load support tickets: "
-            f"{type(exc).__name__}: {exc}"
-        )
-
-    # --------------------------------------------------------
-    # FILTER PENDING
-    # --------------------------------------------------------
 
     pending_tickets = [
         ticket
         for ticket in tickets
-        if str(
-            ticket.get("status", "")
-        ).strip().lower() == "pending"
+        if ticket.get(
+            "status",
+            "",
+        ).lower()
+        == "pending"
     ]
 
-    # --------------------------------------------------------
-    # COUNT
-    # --------------------------------------------------------
+    # -----------------------------------------------------
+    # Queue metric
+    # -----------------------------------------------------
 
     st.metric(
         "Pending requests",
         len(pending_tickets),
     )
 
-    st.write("")
+    if pending_tickets:
 
-    # --------------------------------------------------------
-    # EMPTY STATE
-    # --------------------------------------------------------
+        st.markdown(
+            "#### Open Requests"
+        )
 
-    if not pending_tickets:
-
-        with st.container(border=True):
-
-            st.markdown("### 🟢 All clear")
-
-            st.write(
-                "No pending human-support requests."
-            )
-
-            st.caption(
-                "Escalated requests will appear here."
-            )
-
-    # --------------------------------------------------------
-    # TICKETS
-    # --------------------------------------------------------
-
-    else:
-
-        for ticket in reversed(pending_tickets):
+        for ticket in reversed(
+            pending_tickets
+        ):
 
             ticket_id = ticket.get(
                 "ticket_id",
-                "Unknown ticket",
+                "Ticket",
             )
 
-            created_at = ticket.get(
+            status = ticket.get(
+                "status",
+                "Pending",
+            )
+
+            created = ticket.get(
                 "created_at_utc",
                 "",
             )
 
             summary = ticket.get(
                 "summary",
-                "No summary provided.",
+                "No summary available.",
             )
 
-            customer = ticket.get(
-                "customer_name",
-                "",
+            st.markdown(
+                f"""
+                <div class="ticket-card">
+
+                    <div>
+                        <span class="ticket-id">
+                            {ticket_id}
+                        </span>
+                        &nbsp;
+                        <span class="ticket-status">
+                            {status}
+                        </span>
+                    </div>
+
+                    <div style="
+                        color:#9ca3af;
+                        font-size:11px;
+                        margin-top:5px;
+                    ">
+                        {created}
+                    </div>
+
+                    <div style="
+                        color:#4b5563;
+                        font-size:13px;
+                        margin-top:10px;
+                        line-height:1.5;
+                    ">
+                        {summary}
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
-            email = ticket.get(
-                "contact_email",
-                "",
-            )
-
-            with st.container(border=True):
-
-                st.markdown(
-                    f"**🎫 {ticket_id}**"
-                )
-
-                st.caption(
-                    f"Pending • {created_at}"
-                )
-
-                st.write(summary)
-
-                if (
-                    customer
-                    and customer != "Not provided"
-                ):
-                    st.caption(
-                        f"Customer: {customer}"
-                    )
-
-                if (
-                    email
-                    and email != "Not provided"
-                ):
-                    st.caption(
-                        f"Email: {email}"
-                    )
-
-    # --------------------------------------------------------
-    # DOWNLOAD QUEUE
-    # --------------------------------------------------------
-
-    if tickets:
+        # -------------------------------------------------
+        # Download queue
+        # -------------------------------------------------
 
         csv_data = (
             pd.DataFrame(tickets)
@@ -691,25 +560,39 @@ with support_col:
             .encode("utf-8")
         )
 
-        st.write("")
-
         st.download_button(
-            label="⬇️ Download ticket queue",
+            label="⬇️ Download Ticket Queue",
             data=csv_data,
             file_name="pending_tickets.csv",
             mime="text/csv",
             use_container_width=True,
         )
 
+    else:
 
-# ============================================================
+        st.success(
+            "✓ No pending support requests"
+        )
+
+        st.caption(
+            "Requests escalated to human support "
+            "will appear here."
+        )
+
+
+# =========================================================
 # FOOTER
-# ============================================================
+# =========================================================
 
 st.divider()
 
-st.caption(
-    "Customer Support AI • CrewAI single-agent system • "
-    "Company knowledge search • Verified order lookup • "
-    "Human escalation"
+st.markdown(
+    """
+    <div class="footer">
+        Customer Support AI · Powered by CrewAI & Gemini
+        <br>
+        Secure order verification · Company knowledge · Human escalation
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
