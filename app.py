@@ -1,4 +1,3 @@
-
 """Customer Support AI - Streamlit frontend."""
 
 import pandas as pd
@@ -28,7 +27,7 @@ st.markdown(
     """
     <style>
 
-    /* ---------- Global ---------- */
+    /* ================= GLOBAL ================= */
 
     .stApp {
         background: #f7f8fc;
@@ -40,63 +39,60 @@ st.markdown(
         padding-bottom: 2rem;
     }
 
-    /* ---------- Header ---------- */
+    /* ================= HEADER ================= */
 
     .main-header {
-        background: linear-gradient(
-            135deg,
-            #111827 0%,
-            #1f2937 100%
-        );
+        background: linear-gradient(135deg, #111827, #1f2937);
         padding: 28px 32px;
         border-radius: 18px;
-        margin-bottom: 22px;
+        margin-bottom: 24px;
         color: white;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
     }
 
     .main-header h1 {
         margin: 0;
-        font-size: 32px;
+        font-size: 30px;
         font-weight: 700;
-        letter-spacing: -0.5px;
     }
 
     .main-header p {
         margin: 8px 0 0 0;
         color: #d1d5db;
         font-size: 15px;
+        line-height: 1.5;
     }
 
-    /* ---------- Welcome Card ---------- */
+    /* ================= WELCOME ================= */
 
     .welcome-card {
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 16px;
-        padding: 26px;
-        margin-bottom: 20px;
+        padding: 24px;
+        margin-bottom: 18px;
         box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
     }
 
     .welcome-card h3 {
-        margin-top: 0;
+        margin: 0 0 8px 0;
         color: #111827;
     }
 
     .welcome-card p {
         color: #6b7280;
-        margin-bottom: 0;
+        margin: 0;
+        line-height: 1.6;
     }
 
-    /* ---------- Feature Cards ---------- */
+    /* ================= FEATURE CARDS ================= */
 
     .feature-card {
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 14px;
         padding: 18px;
-        min-height: 120px;
+        min-height: 145px;
         box-shadow: 0 3px 12px rgba(0, 0, 0, 0.03);
     }
 
@@ -108,7 +104,7 @@ st.markdown(
     .feature-title {
         font-weight: 650;
         color: #111827;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
     }
 
     .feature-text {
@@ -117,59 +113,53 @@ st.markdown(
         line-height: 1.5;
     }
 
-    /* ---------- Ticket Card ---------- */
-
-    .ticket-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 16px;
-        margin-bottom: 12px;
-        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.03);
-    }
-
-    .ticket-id {
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .ticket-status {
-        display: inline-block;
-        background: #fff7ed;
-        color: #c2410c;
-        padding: 3px 9px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 600;
-    }
-
-    /* ---------- Sidebar ---------- */
+    /* ================= SIDEBAR ================= */
 
     [data-testid="stSidebar"] {
         background: #ffffff;
         border-right: 1px solid #e5e7eb;
     }
 
-    /* ---------- Chat ---------- */
+    /* ================= CHAT ================= */
 
     [data-testid="stChatMessage"] {
         border-radius: 14px;
     }
 
-    /* ---------- Buttons ---------- */
+    /* ================= BUTTONS ================= */
 
     .stButton > button {
         border-radius: 10px;
         font-weight: 600;
     }
 
-    /* ---------- Footer ---------- */
+    /* ================= FOOTER ================= */
 
     .footer {
         text-align: center;
         color: #9ca3af;
         font-size: 12px;
         padding-top: 18px;
+        line-height: 1.6;
+    }
+
+    /* ================= RESPONSIVE ================= */
+
+    @media (max-width: 900px) {
+
+        .block-container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .main-header {
+            padding: 22px;
+        }
+
+        .main-header h1 {
+            font-size: 25px;
+        }
+
     }
 
     </style>
@@ -258,7 +248,7 @@ with st.sidebar:
 
 
 # =========================================================
-# MAIN COLUMNS
+# MAIN LAYOUT
 # =========================================================
 
 chat_col, support_col = st.columns(
@@ -295,7 +285,10 @@ with chat_col:
             unsafe_allow_html=True,
         )
 
-        feature_col1, feature_col2, feature_col3 = st.columns(3)
+        feature_col1, feature_col2, feature_col3 = st.columns(
+            3,
+            gap="medium",
+        )
 
         with feature_col1:
             st.markdown(
@@ -354,13 +347,12 @@ with chat_col:
 
     for message in st.session_state.messages:
 
-        with st.chat_message(
-            message["role"]
-        ):
+        role = message.get("role", "assistant")
+        content = message.get("content", "")
 
-            st.markdown(
-                message["content"]
-            )
+        with st.chat_message(role):
+
+            st.markdown(content)
 
     # -----------------------------------------------------
     # Chat input
@@ -372,7 +364,7 @@ with chat_col:
 
     if prompt:
 
-        # Save user message.
+        # Save user message
         st.session_state.messages.append(
             {
                 "role": "user",
@@ -380,6 +372,7 @@ with chat_col:
             }
         )
 
+        # Display user message
         with st.chat_message("user"):
             st.markdown(prompt)
 
@@ -389,14 +382,10 @@ with chat_col:
 
         with st.chat_message("assistant"):
 
-            with st.spinner(
-                "Thinking..."
-            ):
+            with st.spinner("Thinking..."):
 
                 try:
 
-                    # Exclude current message because
-                    # it is passed separately.
                     previous_history = (
                         st.session_state.messages[:-1]
                     )
@@ -408,9 +397,7 @@ with chat_col:
                         contact_email=contact_email,
                     )
 
-                    response = str(
-                        response
-                    ).strip()
+                    response = str(response).strip()
 
                     if not response:
                         response = (
@@ -418,7 +405,14 @@ with chat_col:
                             "a response. Please try again."
                         )
 
-                except Exception:
+                except Exception as exc:
+
+                    # Show actual error while testing
+                    st.error(
+                        f"Agent error: {type(exc).__name__}: {exc}"
+                    )
+
+                    st.exception(exc)
 
                     response = (
                         "I'm sorry, something went wrong "
@@ -426,17 +420,9 @@ with chat_col:
                         "Please try again."
                     )
 
-                    # Detailed error goes to Streamlit logs,
-                    # not to the customer UI.
-                    st.exception(
-                        Exception(
-                            "Customer support agent failed."
-                        )
-                    )
-
             st.markdown(response)
 
-        # Save assistant response.
+        # Save assistant response
         st.session_state.messages.append(
             {
                 "role": "assistant",
@@ -453,30 +439,40 @@ with chat_col:
 
 with support_col:
 
-    st.markdown(
-        "### 🧾 Human Support"
-    )
+    st.markdown("### 🧾 Human Support")
+
+    # -----------------------------------------------------
+    # Read tickets
+    # -----------------------------------------------------
 
     try:
 
         tickets = read_pending_tickets()
 
-    except Exception:
+    except Exception as exc:
 
         tickets = []
+
+        st.error(
+            f"Could not load support tickets: "
+            f"{type(exc).__name__}: {exc}"
+        )
+
+    # -----------------------------------------------------
+    # Pending tickets only
+    # -----------------------------------------------------
 
     pending_tickets = [
         ticket
         for ticket in tickets
-        if ticket.get(
-            "status",
-            "",
-        ).lower()
+        if str(
+            ticket.get("status", "")
+        ).strip().lower()
         == "pending"
     ]
 
     # -----------------------------------------------------
-    # Queue metric
+    # Counter
     # -----------------------------------------------------
 
     st.metric(
@@ -484,75 +480,142 @@ with support_col:
         len(pending_tickets),
     )
 
-    if pending_tickets:
+    # =====================================================
+    # EMPTY QUEUE
+    # =====================================================
 
-        st.markdown(
-            "#### Open Requests"
+    if not pending_tickets:
+
+        st.success(
+            "✓ No pending support requests"
         )
 
-        for ticket in reversed(
-            pending_tickets
-        ):
+        st.caption(
+            "Requests escalated to human support "
+            "will appear here."
+        )
 
-            ticket_id = ticket.get(
-                "ticket_id",
-                "Ticket",
+    # =====================================================
+    # TICKETS
+    # =====================================================
+
+    else:
+
+        st.markdown("#### Open Requests")
+
+        for ticket in reversed(pending_tickets):
+
+            ticket_id = str(
+                ticket.get(
+                    "ticket_id",
+                    "Unknown",
+                )
             )
 
-            status = ticket.get(
-                "status",
-                "Pending",
+            status = str(
+                ticket.get(
+                    "status",
+                    "Pending",
+                )
             )
 
-            created = ticket.get(
-                "created_at_utc",
-                "",
+            created = str(
+                ticket.get(
+                    "created_at_utc",
+                    "",
+                )
             )
 
-            summary = ticket.get(
-                "summary",
-                "No summary available.",
+            summary = str(
+                ticket.get(
+                    "summary",
+                    "No summary available.",
+                )
             )
 
-            st.markdown(
-                f"""
-                <div class="ticket-card">
-
-                    <div>
-                        <span class="ticket-id">
-                            {ticket_id}
-                        </span>
-                        &nbsp;
-                        <span class="ticket-status">
-                            {status}
-                        </span>
-                    </div>
-
-                    <div style="
-                        color:#9ca3af;
-                        font-size:11px;
-                        margin-top:5px;
-                    ">
-                        {created}
-                    </div>
-
-                    <div style="
-                        color:#4b5563;
-                        font-size:13px;
-                        margin-top:10px;
-                        line-height:1.5;
-                    ">
-                        {summary}
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True,
+            customer = str(
+                ticket.get(
+                    "customer_name",
+                    "",
+                )
             )
 
-        # -------------------------------------------------
-        # Download queue
-        # -------------------------------------------------
+            email = str(
+                ticket.get(
+                    "contact_email",
+                    "",
+                )
+            )
+
+            # -------------------------------------------------
+            # IMPORTANT:
+            # Native Streamlit components are used here.
+            # No custom HTML.
+            # This prevents raw <div>, <span>, etc.
+            # from appearing in the UI.
+            # -------------------------------------------------
+
+            with st.container(
+                border=True
+            ):
+
+                # Ticket heading
+                ticket_col1, ticket_col2 = st.columns(
+                    [1.7, 1],
+                    gap="small",
+                )
+
+                with ticket_col1:
+
+                    st.markdown(
+                        f"**🎫 {ticket_id}**"
+                    )
+
+                with ticket_col2:
+
+                    st.markdown(
+                        f"**🟠 {status}**"
+                    )
+
+                # Created time
+                if created:
+
+                    st.caption(
+                        f"Created: {created}"
+                    )
+
+                # Summary
+                st.write(
+                    summary
+                )
+
+                # Customer information
+                if (
+                    customer
+                    and customer.lower()
+                    != "not provided"
+                ):
+
+                    st.caption(
+                        f"👤 Customer: {customer}"
+                    )
+
+                # Email
+                if (
+                    email
+                    and email.lower()
+                    != "not provided"
+                ):
+
+                    st.caption(
+                        f"✉️ Email: {email}"
+                    )
+
+    # =====================================================
+    # DOWNLOAD TICKETS
+    # =====================================================
+
+    if tickets:
 
         csv_data = (
             pd.DataFrame(tickets)
@@ -566,17 +629,6 @@ with support_col:
             file_name="pending_tickets.csv",
             mime="text/csv",
             use_container_width=True,
-        )
-
-    else:
-
-        st.success(
-            "✓ No pending support requests"
-        )
-
-        st.caption(
-            "Requests escalated to human support "
-            "will appear here."
         )
 
 
