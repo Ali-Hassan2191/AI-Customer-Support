@@ -48,7 +48,7 @@ def build_agent():
     # and LiteLLM/CrewAI version.
     model_name = _get_secret(
         "GEMINI_MODEL",
-        "gemini/gemini-2.5-flash",
+        "gemini-3.5-flash-lite",
     )
 
     llm = LLM(
