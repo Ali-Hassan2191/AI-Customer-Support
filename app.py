@@ -1,7 +1,4 @@
-"""Customer Support AI - Streamlit frontend."""
-
-import html
-import logging
+"""Streamlit frontend for the CrewAI customer support assistant."""
 
 import pandas as pd
 import streamlit as st
@@ -10,9 +7,9 @@ from agent import answer_customer
 from escalation import read_pending_tickets
 
 
-# =========================================================
+# ============================================================
 # PAGE CONFIG
-# =========================================================
+# ============================================================
 
 st.set_page_config(
     page_title="Customer Support AI",
@@ -22,404 +19,348 @@ st.set_page_config(
 )
 
 
-# =========================================================
-# LOGGING
-# =========================================================
-
-logger = logging.getLogger(__name__)
-
-
-# =========================================================
+# ============================================================
 # CUSTOM CSS
-# =========================================================
+# ============================================================
 
-st.markdown(
+st.html(
     """
     <style>
 
-    /* =====================================================
+    /* -------------------------------------------------------
        GLOBAL
-       ===================================================== */
+    ------------------------------------------------------- */
 
     .stApp {
-        background: #f7f8fc;
+        background: #f5f7fb;
     }
 
-    .block-container {
-        max-width: 1450px;
-        padding-top: 1.25rem;
+    .main .block-container {
+        max-width: 1500px;
+        padding-top: 1.5rem;
         padding-bottom: 2rem;
         padding-left: 2rem;
         padding-right: 2rem;
     }
 
+    /* Prevent horizontal overflow */
+    .stApp,
+    .main,
+    [data-testid="stAppViewContainer"] {
+        overflow-x: hidden;
+    }
 
-    /* =====================================================
+
+    /* -------------------------------------------------------
        SIDEBAR
-       ===================================================== */
+    ------------------------------------------------------- */
 
-    section[data-testid="stSidebar"] {
-        width: 330px !important;
-        min-width: 330px !important;
+    [data-testid="stSidebar"] {
         background: #ffffff;
         border-right: 1px solid #e5e7eb;
     }
 
-    section[data-testid="stSidebar"] > div {
-        width: 330px !important;
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1.5rem;
     }
 
-    section[data-testid="stSidebar"] .block-container {
-        padding: 1.5rem 1.15rem;
+    .sidebar-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        color: #111827;
     }
 
-    /* Sidebar text inputs */
-
-    section[data-testid="stSidebar"] input {
-        color: #111827 !important;
-        background-color: #ffffff !important;
-        border: 1px solid #d1d5db !important;
-        border-radius: 9px !important;
-        min-height: 42px !important;
-    }
-
-    section[data-testid="stSidebar"] input:focus {
-        border-color: #6366f1 !important;
-        box-shadow: 0 0 0 1px #6366f1 !important;
-    }
-
-    section[data-testid="stSidebar"] input::placeholder {
-        color: #9ca3af !important;
-        opacity: 1 !important;
-    }
-
-    section[data-testid="stSidebar"] label {
-        color: #374151 !important;
-        font-weight: 500 !important;
+    .sidebar-description {
+        font-size: 0.82rem;
+        color: #6b7280;
+        line-height: 1.5;
+        margin-bottom: 1.25rem;
     }
 
 
-    /* =====================================================
+    /* -------------------------------------------------------
        HEADER
-       ===================================================== */
+    ------------------------------------------------------- */
 
     .app-header {
-        background: linear-gradient(
-            135deg,
-            #111827,
-            #1f2937
-        );
-
+        background: linear-gradient(135deg, #172033 0%, #26344d 100%);
         border-radius: 18px;
-        padding: 28px 32px;
-        margin-bottom: 28px;
-
-        box-shadow:
-            0 10px 30px rgba(15, 23, 42, 0.10);
+        padding: 1.35rem 1.5rem;
+        margin-bottom: 1.5rem;
+        color: white;
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 8px 25px rgba(15, 23, 42, 0.10);
     }
 
     .app-header-title {
-        color: #ffffff;
-        font-size: 32px;
+        font-size: 1.85rem;
         font-weight: 750;
         line-height: 1.2;
         margin: 0;
     }
 
     .app-header-subtitle {
+        font-size: 0.92rem;
         color: #d1d5db;
-        font-size: 15px;
-        line-height: 1.6;
-        margin-top: 10px;
-        margin-bottom: 0;
+        margin-top: 0.45rem;
+        line-height: 1.5;
     }
 
 
-    /* =====================================================
-       SECTION HEADINGS
-       ===================================================== */
+    /* -------------------------------------------------------
+       SECTION TITLES
+    ------------------------------------------------------- */
 
     .section-title {
+        font-size: 1.25rem;
+        font-weight: 750;
         color: #111827;
-        font-size: 24px;
-        font-weight: 700;
-        margin-bottom: 14px;
+        margin-bottom: 0.75rem;
     }
 
 
-    /* =====================================================
+    /* -------------------------------------------------------
        WELCOME CARD
-       ===================================================== */
+    ------------------------------------------------------- */
 
     .welcome-card {
         background: #ffffff;
         border: 1px solid #e5e7eb;
         border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 18px;
-
-        box-shadow:
-            0 4px 16px rgba(15, 23, 42, 0.04);
+        padding: 1.4rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04);
     }
 
     .welcome-title {
-        color: #111827;
-        font-size: 22px;
+        font-size: 1.05rem;
         font-weight: 700;
-        margin-bottom: 7px;
+        color: #111827;
+        margin-bottom: 0.4rem;
     }
 
     .welcome-text {
-        color: #6b7280;
-        font-size: 14px;
+        color: #4b5563;
         line-height: 1.6;
         margin: 0;
     }
 
 
-    /* =====================================================
+    /* -------------------------------------------------------
+       INFO CARD
+    ------------------------------------------------------- */
+
+    .info-card {
+        background: #eff6ff;
+        border: 1px solid #dbeafe;
+        border-radius: 12px;
+        padding: 0.9rem 1rem;
+        color: #1e3a8a;
+        font-size: 0.9rem;
+        line-height: 1.55;
+        margin-top: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+
+    /* -------------------------------------------------------
        FEATURE CARDS
-       ===================================================== */
+    ------------------------------------------------------- */
 
     .feature-card {
         background: #ffffff;
         border: 1px solid #e5e7eb;
         border-radius: 14px;
-
-        padding: 18px;
-
-        min-height: 145px;
-        box-sizing: border-box;
-
-        box-shadow:
-            0 3px 12px rgba(15, 23, 42, 0.035);
+        padding: 1rem;
+        min-height: 120px;
+        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
     }
 
     .feature-icon {
-        font-size: 25px;
-        line-height: 1;
-        margin-bottom: 12px;
+        font-size: 1.35rem;
+        margin-bottom: 0.35rem;
     }
 
     .feature-title {
-        color: #111827;
-        font-size: 15px;
         font-weight: 700;
-        margin-bottom: 7px;
+        color: #111827;
+        margin-bottom: 0.25rem;
     }
 
-    .feature-description {
+    .feature-text {
         color: #6b7280;
-        font-size: 12.5px;
-        line-height: 1.55;
+        font-size: 0.83rem;
+        line-height: 1.45;
     }
 
 
-    /* =====================================================
-       CHAT AREA
-       ===================================================== */
+    /* -------------------------------------------------------
+       SUPPORT QUEUE
+    ------------------------------------------------------- */
 
-    [data-testid="stChatMessage"] {
-        border-radius: 14px;
-    }
-
-    [data-testid="stChatInput"] {
-        margin-top: 18px;
-    }
-
-
-    /* =====================================================
-       HUMAN SUPPORT
-       ===================================================== */
-
-    .ticket-card {
+    .queue-card {
         background: #ffffff;
         border: 1px solid #e5e7eb;
-        border-radius: 13px;
-        padding: 15px;
-        margin-bottom: 12px;
-
-        box-shadow:
-            0 3px 12px rgba(15, 23, 42, 0.035);
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04);
+        margin-bottom: 0.8rem;
     }
 
-    .ticket-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
+    .queue-ticket {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 0.85rem;
+        margin-top: 0.75rem;
+        background: #fafafa;
     }
 
     .ticket-id {
+        font-weight: 700;
         color: #111827;
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .ticket-status {
-        background: #fff7ed;
-        color: #c2410c;
-        padding: 3px 8px;
-        border-radius: 999px;
-        font-size: 10px;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    .ticket-date {
-        color: #9ca3af;
-        font-size: 10px;
-        margin-top: 5px;
     }
 
     .ticket-summary {
         color: #4b5563;
-        font-size: 12px;
-        line-height: 1.55;
-        margin-top: 10px;
+        font-size: 0.88rem;
+        line-height: 1.5;
+        margin-top: 0.45rem;
     }
 
 
-    /* =====================================================
-       METRIC
-       ===================================================== */
+    /* -------------------------------------------------------
+       CHAT
+    ------------------------------------------------------- */
 
-    div[data-testid="stMetric"] {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 13px;
-        padding: 12px 15px;
-        margin-bottom: 15px;
+    [data-testid="stChatMessage"] {
+        border-radius: 14px;
+        margin-bottom: 0.65rem;
+    }
+
+    [data-testid="stChatInput"] {
+        margin-top: 0.75rem;
     }
 
 
-    /* =====================================================
+    /* -------------------------------------------------------
        BUTTONS
-       ===================================================== */
+    ------------------------------------------------------- */
 
     .stButton > button {
-        border-radius: 9px;
-        min-height: 40px;
-        font-weight: 600;
-    }
-
-    .stDownloadButton > button {
-        border-radius: 9px;
+        border-radius: 10px;
+        min-height: 42px;
         font-weight: 600;
     }
 
 
-    /* =====================================================
-       DIVIDERS
-       ===================================================== */
+    /* -------------------------------------------------------
+       INPUTS
+    ------------------------------------------------------- */
 
-    hr {
-        border-color: #e5e7eb !important;
+    [data-testid="stTextInput"] input {
+        border-radius: 10px;
     }
 
 
-    /* =====================================================
+    /* -------------------------------------------------------
+       METRIC
+    ------------------------------------------------------- */
+
+    [data-testid="stMetric"] {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 0.9rem 1rem;
+    }
+
+
+    /* -------------------------------------------------------
        FOOTER
-       ===================================================== */
+    ------------------------------------------------------- */
 
-    .footer {
-        text-align: center;
+    .footer-note {
         color: #9ca3af;
-        font-size: 11px;
-        line-height: 1.6;
-        padding-top: 10px;
+        font-size: 0.78rem;
+        text-align: center;
+        margin-top: 1.5rem;
+        line-height: 1.5;
     }
 
 
-    /* =====================================================
-       RESPONSIVE
-       ===================================================== */
+    /* -------------------------------------------------------
+       SMALL SCREENS
+    ------------------------------------------------------- */
 
-    @media (max-width: 1100px) {
+    @media (max-width: 900px) {
 
-        .block-container {
+        .main .block-container {
             padding-left: 1rem;
             padding-right: 1rem;
         }
 
-        .app-header {
-            padding: 23px;
+        .app-header-title {
+            font-size: 1.45rem;
         }
 
-        .app-header-title {
-            font-size: 27px;
+        .app-header {
+            padding: 1.1rem;
         }
 
     }
 
     </style>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 
-# =========================================================
+# ============================================================
 # SESSION STATE
-# =========================================================
+# ============================================================
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 
-# =========================================================
-# HEADER
-# =========================================================
-
-st.markdown(
-    """
-    <div class="app-header">
-        <div class="app-header-title">
-            💬 Customer Support AI
-        </div>
-
-        <div class="app-header-subtitle">
-            Get help with company information, products,
-            orders, and support requests.
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-# =========================================================
+# ============================================================
 # SIDEBAR
-# =========================================================
+# ============================================================
 
 with st.sidebar:
 
-    st.markdown("## 👤 Customer Profile")
+    st.markdown(
+        '<div class="sidebar-title">👤 Customer Profile</div>',
+        unsafe_allow_html=True,
+    )
 
-    st.caption(
-        "Optional information helps our support team "
-        "follow up when needed."
+    st.markdown(
+        '<div class="sidebar-description">'
+        "Optional information helps our support team follow up when needed."
+        "</div>",
+        unsafe_allow_html=True,
     )
 
     customer_name = st.text_input(
         "Your name",
-        placeholder="e.g. Ali Hassan",
         key="customer_name",
+        placeholder="Enter your name",
     )
 
     contact_email = st.text_input(
         "Email address",
-        placeholder="e.g. you@example.com",
         key="contact_email",
+        placeholder="you@example.com",
     )
 
     st.divider()
 
-    st.markdown("### 📦 Order Support")
+    st.markdown(
+        "### 📦 Order Support"
+    )
 
     st.info(
-        "To check an order, provide both your "
-        "**Order ID** and the **phone number used "
-        "for that order**."
+        "To check an order, provide both your **Order ID** "
+        "and the **phone number used for that order**."
     )
 
     st.divider()
@@ -433,27 +374,48 @@ with st.sidebar:
 
     st.divider()
 
-    st.markdown("### 🔒 Privacy")
-
     st.caption(
-        "Order information is only returned after "
-        "the order ID and contact number are verified."
+        "Customer Support AI\n\n"
+        "Powered by CrewAI + Gemini"
     )
 
 
-# =========================================================
+# ============================================================
+# HEADER
+# ============================================================
+
+st.markdown(
+    """
+    <div class="app-header">
+
+        <div class="app-header-title">
+            💬 Customer Support AI
+        </div>
+
+        <div class="app-header-subtitle">
+            Get help with company information, products,
+            orders, and support requests.
+        </div>
+
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ============================================================
 # MAIN LAYOUT
-# =========================================================
+# ============================================================
 
 chat_col, support_col = st.columns(
-    [2.35, 1],
+    [2.4, 1],
     gap="large",
 )
 
 
-# =========================================================
+# ============================================================
 # CHAT COLUMN
-# =========================================================
+# ============================================================
 
 with chat_col:
 
@@ -462,9 +424,9 @@ with chat_col:
         unsafe_allow_html=True,
     )
 
-    # -----------------------------------------------------
-    # WELCOME
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # Welcome screen
+    # --------------------------------------------------------
 
     if not st.session_state.messages:
 
@@ -478,8 +440,8 @@ with chat_col:
 
                 <p class="welcome-text">
                     I'm your customer support assistant.
-                    Ask me about company policies,
-                    products, orders, or any support issue.
+                    Ask me about company policies, products,
+                    orders, delivery status, or any support issue.
                 </p>
 
             </div>
@@ -487,27 +449,23 @@ with chat_col:
             unsafe_allow_html=True,
         )
 
-        # Three feature columns
-        feature_1, feature_2, feature_3 = st.columns(
+        feature_cols = st.columns(
             3,
             gap="medium",
         )
 
-        with feature_1:
-
+        with feature_cols[0]:
             st.markdown(
                 """
                 <div class="feature-card">
 
-                    <div class="feature-icon">
-                        📚
-                    </div>
+                    <div class="feature-icon">📚</div>
 
                     <div class="feature-title">
                         Company Knowledge
                     </div>
 
-                    <div class="feature-description">
+                    <div class="feature-text">
                         Get answers from the company's
                         knowledge base.
                     </div>
@@ -517,23 +475,20 @@ with chat_col:
                 unsafe_allow_html=True,
             )
 
-        with feature_2:
-
+        with feature_cols[1]:
             st.markdown(
                 """
                 <div class="feature-card">
 
-                    <div class="feature-icon">
-                        📦
-                    </div>
+                    <div class="feature-icon">📦</div>
 
                     <div class="feature-title">
                         Order Tracking
                     </div>
 
-                    <div class="feature-description">
-                        Check your order status after
-                        secure verification.
+                    <div class="feature-text">
+                        Check verified order status using
+                        your Order ID and phone number.
                     </div>
 
                 </div>
@@ -541,23 +496,20 @@ with chat_col:
                 unsafe_allow_html=True,
             )
 
-        with feature_3:
-
+        with feature_cols[2]:
             st.markdown(
                 """
                 <div class="feature-card">
 
-                    <div class="feature-icon">
-                        👨‍💼
-                    </div>
+                    <div class="feature-icon">👨‍💼</div>
 
                     <div class="feature-title">
                         Human Support
                     </div>
 
-                    <div class="feature-description">
-                        Issues that need human attention
-                        can be escalated.
+                    <div class="feature-text">
+                        Requests that need human help can
+                        be escalated to support.
                     </div>
 
                 </div>
@@ -565,34 +517,38 @@ with chat_col:
                 unsafe_allow_html=True,
             )
 
-        st.write("")
-
-
-    # -----------------------------------------------------
-    # CHAT HISTORY
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # Existing chat messages
+    # --------------------------------------------------------
 
     for message in st.session_state.messages:
 
+        role = message.get("role", "assistant")
+        content = message.get("content", "")
+
         with st.chat_message(
-            message["role"]
+            role,
+            avatar="👤" if role == "user" else "🤖",
         ):
-
-            st.markdown(
-                message["content"]
-            )
+            st.markdown(content)
 
 
-    # -----------------------------------------------------
-    # CHAT INPUT
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # Chat input
+    # --------------------------------------------------------
 
     prompt = st.chat_input(
-        "Type your message..."
+        "Type your message here..."
     )
+
+
+    # --------------------------------------------------------
+    # Process new message
+    # --------------------------------------------------------
 
     if prompt:
 
+        # Save user message
         st.session_state.messages.append(
             {
                 "role": "user",
@@ -600,17 +556,27 @@ with chat_col:
             }
         )
 
-        with st.chat_message("user"):
+        # Display user message immediately
+        with st.chat_message(
+            "user",
+            avatar="👤",
+        ):
             st.markdown(prompt)
 
-        with st.chat_message("assistant"):
+        # Generate assistant response
+        with st.chat_message(
+            "assistant",
+            avatar="🤖",
+        ):
 
             with st.spinner(
-                "Thinking..."
+                "Checking company information..."
             ):
 
                 try:
 
+                    # IMPORTANT:
+                    # Do not include the current message in history.
                     previous_history = (
                         st.session_state.messages[:-1]
                     )
@@ -622,33 +588,19 @@ with chat_col:
                         contact_email=contact_email,
                     )
 
-                    response = str(
-                        response
-                    ).strip()
-
-                    if not response:
-
-                        response = (
-                            "I'm sorry, I couldn't generate "
-                            "a response. Please try again."
-                        )
-
                 except Exception as exc:
 
-                    # Log real error without showing technical
-                    # details to the customer.
-                    logger.exception(
-                        "Customer support agent failed."
-                    )
+                    # Show full error during development
+                    st.exception(exc)
 
                     response = (
-                        "I'm sorry, something went wrong "
-                        "while processing your request. "
-                        "Please try again."
+                        "Sorry, I couldn't process your request "
+                        "right now. Please try again."
                     )
 
-            st.markdown(response)
+                st.markdown(response)
 
+        # Save assistant response
         st.session_state.messages.append(
             {
                 "role": "assistant",
@@ -656,12 +608,13 @@ with chat_col:
             }
         )
 
-        st.rerun()
+        # No st.rerun() here.
+        # Streamlit already reruns after chat_input submission.
 
 
-# =========================================================
+# ============================================================
 # HUMAN SUPPORT COLUMN
-# =========================================================
+# ============================================================
 
 with support_col:
 
@@ -670,23 +623,32 @@ with support_col:
         unsafe_allow_html=True,
     )
 
-    try:
+    # --------------------------------------------------------
+    # Load tickets
+    # --------------------------------------------------------
 
+    try:
         tickets = read_pending_tickets()
 
-    except Exception:
+    except Exception as exc:
 
         tickets = []
+
+        st.error(
+            f"Could not load support tickets: {type(exc).__name__}"
+        )
+
 
     pending_tickets = [
         ticket
         for ticket in tickets
-        if ticket.get(
-            "status",
-            "",
-        ).lower()
-        == "pending"
+        if str(ticket.get("status", "")).lower() == "pending"
     ]
+
+
+    # --------------------------------------------------------
+    # Pending count
+    # --------------------------------------------------------
 
     st.metric(
         "Pending requests",
@@ -694,72 +656,65 @@ with support_col:
     )
 
 
-    # -----------------------------------------------------
-    # TICKETS
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # Empty state
+    # --------------------------------------------------------
 
-    if pending_tickets:
+    if not pending_tickets:
 
-        st.markdown("#### Open Requests")
+        st.success(
+            "✓ No pending support requests"
+        )
 
-        for ticket in reversed(
-            pending_tickets
-        ):
+        st.caption(
+            "Requests escalated to human support will "
+            "appear here."
+        )
 
-            ticket_id = html.escape(
-                str(
-                    ticket.get(
-                        "ticket_id",
-                        "Ticket",
-                    )
-                )
+
+    # --------------------------------------------------------
+    # Tickets
+    # --------------------------------------------------------
+
+    else:
+
+        for ticket in reversed(pending_tickets):
+
+            ticket_id = ticket.get(
+                "ticket_id",
+                "Unknown ticket",
             )
 
-            status = html.escape(
-                str(
-                    ticket.get(
-                        "status",
-                        "Pending",
-                    )
-                )
+            created_at = ticket.get(
+                "created_at_utc",
+                "",
             )
 
-            created = html.escape(
-                str(
-                    ticket.get(
-                        "created_at_utc",
-                        "",
-                    )
-                )
+            summary = ticket.get(
+                "summary",
+                "No summary provided.",
             )
 
-            summary = html.escape(
-                str(
-                    ticket.get(
-                        "summary",
-                        "No summary available.",
-                    )
-                )
+            customer = ticket.get(
+                "customer_name",
+                "",
+            )
+
+            email = ticket.get(
+                "contact_email",
+                "",
             )
 
             st.markdown(
                 f"""
-                <div class="ticket-card">
+                <div class="queue-ticket">
 
-                    <div class="ticket-top">
-
-                        <div class="ticket-id">
-                            {ticket_id}
-                        </div>
-
-                        <div class="ticket-status">
-                            {status}
-                        </div>
-
+                    <div class="ticket-id">
+                        🎫 {ticket_id}
                     </div>
 
-                    <div class="ticket-date">
-                        {created}
+                    <div style="color:#6b7280;font-size:0.75rem;margin-top:0.2rem;">
+                        Pending • {created_at}
                     </div>
 
                     <div class="ticket-summary">
@@ -771,48 +726,47 @@ with support_col:
                 unsafe_allow_html=True,
             )
 
+            if customer and customer != "Not provided":
+                st.caption(
+                    f"Customer: {customer}"
+                )
 
-        csv_data = (
-            pd.DataFrame(
-                tickets
-            )
-            .to_csv(index=False)
-            .encode("utf-8")
-        )
+            if email and email != "Not provided":
+                st.caption(
+                    f"Email: {email}"
+                )
+
+
+    # --------------------------------------------------------
+    # Download tickets
+    # --------------------------------------------------------
+
+    if tickets:
+
+        csv_data = pd.DataFrame(
+            tickets
+        ).to_csv(
+            index=False
+        ).encode("utf-8")
 
         st.download_button(
-            "⬇️ Download Ticket Queue",
+            label="⬇️ Download ticket queue",
             data=csv_data,
             file_name="pending_tickets.csv",
             mime="text/csv",
             use_container_width=True,
         )
 
-    else:
 
-        st.success(
-            "✓ No pending support requests"
-        )
-
-        st.caption(
-            "Requests escalated to human support "
-            "will appear here."
-        )
-
-
-# =========================================================
+# ============================================================
 # FOOTER
-# =========================================================
-
-st.divider()
+# ============================================================
 
 st.markdown(
     """
-    <div class="footer">
-        Customer Support AI · Powered by CrewAI & Gemini
-        <br>
-        Secure order verification · Company knowledge ·
-        Human escalation
+    <div class="footer-note">
+        Customer Support AI • CrewAI single-agent system •
+        Company knowledge search • Verified order lookup • Human escalation
     </div>
     """,
     unsafe_allow_html=True,
